@@ -20,6 +20,7 @@ impl From<Letter> for &str {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct CheckResult {
     letters: [Letter; WORD_LEN],
 }
@@ -75,24 +76,26 @@ pub fn check_word(word: &str, target: &str) -> CheckResult {
     CheckResult::new(result)
 }
 
-pub fn filter_word(word: &str, current: &str, result: &CheckResult) -> bool {
-    let current = str_to_chars(current);
+pub fn filter_word(word: &str, results: &Vec<(String, CheckResult)>) -> bool {
     let word = str_to_chars(word);
-    for i in 0..WORD_LEN {
-        match result[i] {
-            Letter::Green => {
-                if word[i] != current[i] {
-                    return false;
+    for (current, result) in results {
+        let current = str_to_chars(current.as_str());
+        for i in 0..WORD_LEN {
+            match result[i] {
+                Letter::Green => {
+                    if word[i] != current[i] {
+                        return false;
+                    }
                 }
-            }
-            Letter::Yellow => {
-                if !word.contains(&current[i]) || word[i] == current[i] {
-                    return false;
+                Letter::Yellow => {
+                    if !word.contains(&current[i]) || word[i] == current[i] {
+                        return false;
+                    }
                 }
-            }
-            Letter::Gray => {
-                if word[i] == current[i] {
-                    return false;
+                Letter::Gray => {
+                    if word[i] == current[i] {
+                        return false;
+                    }
                 }
             }
         }
