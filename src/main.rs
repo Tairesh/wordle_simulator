@@ -69,7 +69,8 @@ fn main() {
     } else {
         println!("Wordle x/6");
     }
+    println!();
     for (word, result) in results {
-        println!("{} ({})", result.as_string(), word);
+        println!("{} ||{}||", result.as_string(), word);
     }
 }
