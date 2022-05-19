@@ -1,5 +1,7 @@
-use std::collections::HashSet;
-use std::ops::Index;
+use std::{
+    collections::HashSet,
+    ops::Index,
+};
 
 pub const WORD_LEN: usize = 5;
 
@@ -10,9 +12,9 @@ pub enum Letter {
     Gray,
 }
 
-impl From<Letter> for &str {
-    fn from(r: Letter) -> Self {
-        match r {
+impl AsRef<str> for Letter {
+    fn as_ref(&self) -> &'static str {
+        match self {
             Letter::Green => "🟩",
             Letter::Yellow => "🟨",
             Letter::Gray => "⬜️️",
@@ -21,21 +23,13 @@ impl From<Letter> for &str {
 }
 
 #[derive(Debug, Clone)]
-pub struct CheckResult {
+pub struct Check {
     letters: [Letter; WORD_LEN],
 }
 
-impl CheckResult {
-    pub fn new(raw: [Letter; WORD_LEN]) -> Self {
+impl Check {
+    fn new(raw: [Letter; WORD_LEN]) -> Self {
         Self { letters: raw }
-    }
-
-    pub fn as_string(&self) -> String {
-        let mut s = String::new();
-        for r in self.letters.iter().copied() {
-            s.push_str(r.into());
-        }
-        s
     }
 
     pub fn success(&self) -> bool {
@@ -43,7 +37,16 @@ impl CheckResult {
     }
 }
 
-impl Index<usize> for CheckResult {
+impl ToString for Check {
+    fn to_string(&self) -> String {
+        self.letters
+            .iter()
+            .map(AsRef::as_ref)
+            .collect()
+    }
+}
+
+impl Index<usize> for Check {
     type Output = Letter;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -51,16 +54,10 @@ impl Index<usize> for CheckResult {
     }
 }
 
-pub fn check_word(word: &str, target: &str) -> CheckResult {
+pub fn check_word(word: &str, target: &str) -> Check {
     let word = str_to_chars(word);
     let target = str_to_chars(target);
-    let mut result = [
-        Letter::Gray,
-        Letter::Gray,
-        Letter::Gray,
-        Letter::Gray,
-        Letter::Gray,
-    ];
+    let mut result = [Letter::Gray; 5];
     let mut used = HashSet::new();
     for (i, c) in word.iter().enumerate() {
         result[i] = if target[i] == *c {
@@ -73,13 +70,13 @@ pub fn check_word(word: &str, target: &str) -> CheckResult {
         used.insert(*c);
     }
 
-    CheckResult::new(result)
+    Check::new(result)
 }
 
-pub fn filter_word(word: &str, results: &Vec<(String, CheckResult)>) -> bool {
+pub fn filter_word(word: &str, results: &[(String, Check)]) -> bool {
     let word = str_to_chars(word);
     for (current, result) in results {
-        let current = str_to_chars(current.as_str());
+        let current = str_to_chars(current);
         for i in 0..WORD_LEN {
             match result[i] {
                 Letter::Green => {
@@ -115,7 +112,7 @@ fn str_to_chars(word: &str) -> [char; WORD_LEN] {
 
 #[cfg(test)]
 mod tests {
-    use super::{check_word, CheckResult, Letter};
+    use super::{check_word, Check, Letter};
 
     // ТКАНЬ tested here: https://wordle.belousov.one/?word_id=XgT7TH8clN1
 
@@ -124,7 +121,7 @@ mod tests {
         let result = check_word("сдоба", "ткань");
         assert!(matches!(
             result,
-            CheckResult {
+            Check {
                 letters: [
                     Letter::Gray,
                     Letter::Gray,
@@ -134,7 +131,7 @@ mod tests {
                 ]
             }
         ));
-        assert_eq!("⬜️️⬜️️⬜️️⬜️️🟨", result.as_string());
+        assert_eq!("⬜️️⬜️️⬜️️⬜️️🟨", result.to_string());
         assert_eq!(false, result.success());
     }
 
@@ -143,7 +140,7 @@ mod tests {
         let result = check_word("канал", "ткань");
         assert!(matches!(
             result,
-            CheckResult {
+            Check {
                 letters: [
                     Letter::Yellow,
                     Letter::Yellow,
@@ -153,7 +150,7 @@ mod tests {
                 ]
             }
         ));
-        assert_eq!("🟨🟨🟨⬜️️⬜️️", result.as_string());
+        assert_eq!("🟨🟨🟨⬜️️⬜️️", result.to_string());
         assert_eq!(false, result.success());
         assert_eq!(Letter::Yellow, result[0]);
     }
@@ -163,7 +160,7 @@ mod tests {
         let result = check_word("ткань", "ткань");
         assert!(matches!(
             result,
-            CheckResult {
+            Check {
                 letters: [
                     Letter::Green,
                     Letter::Green,
@@ -173,7 +170,7 @@ mod tests {
                 ]
             }
         ));
-        assert_eq!("🟩🟩🟩🟩🟩", result.as_string());
+        assert_eq!("🟩🟩🟩🟩🟩", result.to_string());
         assert_eq!(true, result.success());
     }
 }
