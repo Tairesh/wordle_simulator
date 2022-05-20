@@ -70,6 +70,7 @@ pub fn diff(word: &str, target: &str) -> Matches {
     Matches(diff)
 }
 
+// TODO: tests
 pub fn filter_word(word: &str, results: &Vec<(String, Matches)>) -> bool {
     let word = str_to_chars(word);
     let word = word.as_slice();
@@ -112,117 +113,21 @@ fn str_to_chars(word: &str) -> Vec<char> {
 
 #[cfg(test)]
 mod tests {
-    use super::{diff, Match};
+    use super::{
+        diff,
+        Match::{self, *},
+    };
 
-    // ТКАНЬ tested here: https://wordle.belousov.one/?word_id=XgT7TH8clN1
+    use test_case::test_case;
 
-    #[test]
-    fn check_word_test() {
-        let result = diff("сдоба", "ткань");
-        assert_eq!(
-            vec![
-                Match::Gray,
-                Match::Gray,
-                Match::Gray,
-                Match::Gray,
-                Match::Yellow,
-            ],
-            result.0
-        );
-        assert_eq!(false, result.success());
-    }
-
-    #[test]
-    fn check_second_occurrence_is_gray() {
-        let result = diff("канал", "ткань");
-        assert_eq!(
-            vec![
-                Match::Yellow,
-                Match::Yellow,
-                Match::Yellow,
-                Match::Gray,
-                Match::Gray,
-            ],
-            result.0,
-        );
-        assert_eq!(false, result.success());
-        assert_eq!(Match::Yellow, result[0]);
-    }
-
-    #[test]
-    fn check_second_occurrence_is_gray2() {
-        let result = diff("коала", "ткань");
-        assert_eq!(
-            vec![
-                Match::Yellow,
-                Match::Gray,
-                Match::Green,
-                Match::Gray,
-                Match::Gray,
-            ],
-            result.0,
-        );
-        assert_eq!(false, result.success());
-    }
-
-    #[test]
-    fn check_second_occurrence_is_gray3() {
-        let result = diff("пиала", "пизда");
-        assert_eq!(
-            vec![
-                Match::Green,
-                Match::Green,
-                Match::Gray,
-                Match::Gray,
-                Match::Green,
-            ],
-            result.0,
-        );
-    }
-
-    #[test]
-    fn check_second_occurrence_is_yellow() {
-        let result = diff("коала", "панда");
-        assert_eq!(
-            vec![
-                Match::Gray,
-                Match::Gray,
-                Match::Yellow,
-                Match::Gray,
-                Match::Green,
-            ],
-            result.0,
-        );
-    }
-
-    #[test]
-    fn check_second_occurrence_is_yellow2() {
-        let result = diff("шимми", "визит");
-        assert_eq!(
-            vec![
-                Match::Gray,
-                Match::Green,
-                Match::Gray,
-                Match::Gray,
-                Match::Yellow,
-            ],
-            result.0,
-        );
-    }
-
-    #[test]
-    fn check_success() {
-        let result = diff("ткань", "ткань");
-        assert_eq!(
-            vec![
-                Match::Green,
-                Match::Green,
-                Match::Green,
-                Match::Green,
-                Match::Green,
-            ],
-            result.0,
-        );
-        assert_eq!(true, result.success());
+    #[test_case("сдоба", "ткань", vec![Gray, Gray, Gray, Gray, Yellow]; "one yellow letter")]
+    #[test_case("канал", "ткань", vec![Yellow, Yellow, Yellow, Gray, Gray]; "first occurrence is yellow, second is gray")]
+    #[test_case("коала", "ткань", vec![Yellow, Gray, Green, Gray, Gray]; "first occurrence is green, second is gray")]
+    #[test_case("пиала", "пизда", vec![Green, Green, Gray, Gray, Green]; "first occurrence is gray, second is green")]
+    #[test_case("коала", "панда", vec![Gray, Gray, Yellow, Gray, Green]; "first occurrence is yellow, second is green")]
+    #[test_case("шимми", "визит", vec![Gray, Green, Gray, Gray, Yellow]; "first occurrence is green, second is yellow")]
+    #[test_case("ткань", "ткань", vec![Green, Green, Green, Green, Green]; "all greens")]
+    fn diff_test(word: &str, target: &str, matches: Vec<Match>) {
+        assert_eq!(diff(word, target).0, matches);
     }
 }
