@@ -28,26 +28,11 @@ fn main() {
     let mut rng = thread_rng();
 
     while !words.is_empty() {
-        let current_word = if results.is_empty() && target.chars().count() == 5 {
-            String::from(
-                *[
-                    "сдоба",
-                    "белка",
-                    "нитка",
-                    "полка",
-                    "пакет",
-                    "багет",
-                    "лимон",
-                ]
-                .choose(&mut rng)
-                .unwrap(),
-            )
-        } else {
+        let current_word =
             // TODO: smarter choose
-            words.choose(&mut rng).unwrap().clone()
-        };
+            words.choose(&mut rng).unwrap().clone();
 
-        let result = wordle::check_word(current_word.as_str(), target.as_str());
+        let result = wordle::diff(current_word.as_str(), target.as_str());
         results.push((current_word.clone(), result.clone()));
         if result.success() {
             break;
@@ -69,6 +54,6 @@ fn main() {
     }
     println!();
     for (word, result) in results {
-        println!("{} ||{}||", result.as_string(), word);
+        println!("{} ||{}||", result, word);
     }
 }

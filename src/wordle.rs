@@ -1,96 +1,103 @@
-use std::collections::HashSet;
+use std::fmt::Display;
 use std::ops::Index;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum Letter {
+pub enum Match {
     Green,
     Yellow,
     Gray,
 }
 
-impl From<Letter> for &str {
-    fn from(r: Letter) -> Self {
-        match r {
-            Letter::Green => "🟩",
-            Letter::Yellow => "🟨",
-            Letter::Gray => "⬜️️",
+impl Display for Match {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Match::Green => write!(f, "🟩"),
+            Match::Yellow => write!(f, "🟨"),
+            Match::Gray => write!(f, "⬛"),
         }
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct CheckResult {
-    letters: Vec<Letter>,
-}
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Matches(pub Vec<Match>);
 
-impl CheckResult {
-    pub fn new(letters: Vec<Letter>) -> Self {
-        Self { letters }
-    }
-
-    pub fn as_string(&self) -> String {
-        let mut s = String::new();
-        for r in self.letters.iter().copied() {
-            s.push_str(r.into());
-        }
-        s
-    }
-
+impl Matches {
     pub fn success(&self) -> bool {
-        self.letters.iter().all(|r| matches!(r, Letter::Green))
+        self.0.iter().all(|r| *r == Match::Green)
     }
 }
 
-impl Index<usize> for CheckResult {
-    type Output = Letter;
+impl Display for Matches {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for m in &self.0 {
+            write!(f, "{}", m)?;
+        }
+        write!(f, "")
+    }
+}
+
+impl Index<usize> for Matches {
+    type Output = Match;
 
     fn index(&self, index: usize) -> &Self::Output {
-        &self.letters[index]
+        &self.0[index]
     }
 }
 
-pub fn check_word(word: &str, target: &str) -> CheckResult {
+pub fn diff(word: &str, target: &str) -> Matches {
     let word = str_to_chars(word);
-    let target = str_to_chars(target);
-    let target = target.as_slice();
-    let mut result = Vec::with_capacity(target.len());
-    let mut used = HashSet::new();
-    for (i, c) in word.into_iter().enumerate() {
-        result.push(if target[i] == c {
-            Letter::Green
-        } else if !used.contains(&c) && target.contains(&c) {
-            Letter::Yellow
-        } else {
-            Letter::Gray
-        });
-        used.insert(c);
-    }
+    let mut target = str_to_chars(target);
 
-    CheckResult::new(result)
+    let mut diff = vec![Match::Gray; target.len()];
+    let diff_slice = diff.as_mut_slice();
+
+    word.iter().enumerate().for_each(|(i, c)| {
+        if target[i] == *c {
+            diff_slice[i] = Match::Green;
+            target[i] = ' '; // letters only match once
+        }
+    });
+
+    word.iter().enumerate().for_each(|(i, &b)| {
+        if diff_slice[i] == Match::Gray {
+            if let Some(j) = target.iter().position(|&x| x == b) {
+                target[j] = ' '; // letters only match once
+                diff_slice[i] = Match::Yellow;
+            }
+        }
+    });
+
+    Matches(diff)
 }
 
-pub fn filter_word(word: &str, results: &Vec<(String, CheckResult)>) -> bool {
+pub fn filter_word(word: &str, results: &Vec<(String, Matches)>) -> bool {
     let word = str_to_chars(word);
     let word = word.as_slice();
     for (current, result) in results {
         let current = str_to_chars(current.as_str());
         let current = current.as_slice();
-        for (i, letter) in result.letters.iter().enumerate() {
+        for (i, letter) in result.0.iter().enumerate() {
+            let c = current[i];
+            let count = current.iter().filter(|p| **p == c).count();
             match letter {
-                Letter::Green => {
+                Match::Green => {
                     if word[i] != current[i] {
                         return false;
                     }
                 }
-                Letter::Yellow => {
+                Match::Yellow => {
                     if !word.contains(&current[i]) || word[i] == current[i] {
                         return false;
                     }
                 }
-                Letter::Gray => {
+                Match::Gray => {
                     if word[i] == current[i] {
                         return false;
                     }
+                    if count == 1 && word.contains(&c) {
+                        return false;
+                    }
+                    // TODO: if count > 1 ???
                 }
             }
         }
@@ -105,61 +112,117 @@ fn str_to_chars(word: &str) -> Vec<char> {
 
 #[cfg(test)]
 mod tests {
-    use super::{check_word, Letter};
+    use super::{diff, Match};
 
     // ТКАНЬ tested here: https://wordle.belousov.one/?word_id=XgT7TH8clN1
 
     #[test]
     fn check_word_test() {
-        let result = check_word("сдоба", "ткань");
+        let result = diff("сдоба", "ткань");
         assert_eq!(
             vec![
-                Letter::Gray,
-                Letter::Gray,
-                Letter::Gray,
-                Letter::Gray,
-                Letter::Yellow,
+                Match::Gray,
+                Match::Gray,
+                Match::Gray,
+                Match::Gray,
+                Match::Yellow,
             ],
-            result.letters
+            result.0
         );
-        assert_eq!("⬜️️⬜️️⬜️️⬜️️🟨", result.as_string());
         assert_eq!(false, result.success());
     }
 
     #[test]
     fn check_second_occurrence_is_gray() {
-        let result = check_word("канал", "ткань");
+        let result = diff("канал", "ткань");
         assert_eq!(
             vec![
-                Letter::Yellow,
-                Letter::Yellow,
-                Letter::Yellow,
-                Letter::Gray,
-                Letter::Gray,
+                Match::Yellow,
+                Match::Yellow,
+                Match::Yellow,
+                Match::Gray,
+                Match::Gray,
             ],
-            result.letters,
+            result.0,
         );
-        assert_eq!("🟨🟨🟨⬜️️⬜️️", result.as_string());
         assert_eq!(false, result.success());
-        assert_eq!(Letter::Yellow, result[0]);
+        assert_eq!(Match::Yellow, result[0]);
     }
 
-    // TODO: second letter
+    #[test]
+    fn check_second_occurrence_is_gray2() {
+        let result = diff("коала", "ткань");
+        assert_eq!(
+            vec![
+                Match::Yellow,
+                Match::Gray,
+                Match::Green,
+                Match::Gray,
+                Match::Gray,
+            ],
+            result.0,
+        );
+        assert_eq!(false, result.success());
+    }
+
+    #[test]
+    fn check_second_occurrence_is_gray3() {
+        let result = diff("пиала", "пизда");
+        assert_eq!(
+            vec![
+                Match::Green,
+                Match::Green,
+                Match::Gray,
+                Match::Gray,
+                Match::Green,
+            ],
+            result.0,
+        );
+    }
+
+    #[test]
+    fn check_second_occurrence_is_yellow() {
+        let result = diff("коала", "панда");
+        assert_eq!(
+            vec![
+                Match::Gray,
+                Match::Gray,
+                Match::Yellow,
+                Match::Gray,
+                Match::Green,
+            ],
+            result.0,
+        );
+    }
+
+    #[test]
+    fn check_second_occurrence_is_yellow2() {
+        let result = diff("шимми", "визит");
+        assert_eq!(
+            vec![
+                Match::Gray,
+                Match::Green,
+                Match::Gray,
+                Match::Gray,
+                Match::Yellow,
+            ],
+            result.0,
+        );
+    }
 
     #[test]
     fn check_success() {
-        let result = check_word("ткань", "ткань");
+        let result = diff("ткань", "ткань");
         assert_eq!(
             vec![
-                Letter::Green,
-                Letter::Green,
-                Letter::Green,
-                Letter::Green,
-                Letter::Green,
+                Match::Green,
+                Match::Green,
+                Match::Green,
+                Match::Green,
+                Match::Green,
             ],
-            result.letters,
+            result.0,
         );
-        assert_eq!("🟩🟩🟩🟩🟩", result.as_string());
         assert_eq!(true, result.success());
     }
 }
