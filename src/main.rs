@@ -1,7 +1,4 @@
-use rand::{
-    seq::SliceRandom,
-    thread_rng,
-};
+use rand::{seq::SliceRandom, thread_rng};
 
 mod wordle;
 
@@ -17,7 +14,7 @@ const BASE_WORDS: &[&'static str] = &[
     "лимон",
 ];
 
-fn wordle(target: String, mut words: Vec<String>) -> (bool, Vec<(String, wordle::Check)>)  {
+fn wordle(target: String, mut words: Vec<String>) -> (bool, Vec<(String, wordle::Check)>) {
     let mut attempts = Vec::new();
     let mut rng = thread_rng();
 
@@ -30,7 +27,7 @@ fn wordle(target: String, mut words: Vec<String>) -> (bool, Vec<(String, wordle:
         } else {
             words
                 .choose(&mut rng) // TODO: smarter choose
-                .unwrap()// Unreachable
+                .unwrap() // Unreachable
                 .to_string()
         };
 
@@ -50,23 +47,19 @@ fn wordle(target: String, mut words: Vec<String>) -> (bool, Vec<(String, wordle:
             .into_iter()
             .filter(|w| wordle::filter_word(w, &attempts))
             .collect();
-    };
+    }
 
     (false, attempts)
 }
 
 fn main() {
     let target = match std::env::args().nth(1) {
-        None => {
-            return println!("No word provided")
-        }
-        Some(target) if target.len() != WORD_BYTES => {
-            return println!("Invalid argument")
-        },
+        None => return println!("No word provided"),
+        Some(target) if target.len() != WORD_BYTES => return println!("Invalid argument"),
         Some(target) => target,
     };
-    let words = serde_json::from_str::<Vec<String>>(include_str!("../words.json"))
-        .expect("Corrupted json");
+    let words =
+        serde_json::from_str::<Vec<String>>(include_str!("../words.json")).expect("Corrupted json");
 
     let (success, attempts) = wordle(target, words);
 

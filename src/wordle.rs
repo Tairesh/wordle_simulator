@@ -1,7 +1,4 @@
-use std::{
-    collections::HashSet,
-    ops::Index,
-};
+use std::{collections::HashSet, ops::Index};
 
 pub const WORD_LEN: usize = 5;
 
@@ -39,10 +36,7 @@ impl Check {
 
 impl ToString for Check {
     fn to_string(&self) -> String {
-        self.letters
-            .iter()
-            .map(AsRef::as_ref)
-            .collect()
+        self.letters.iter().map(AsRef::as_ref).collect()
     }
 }
 
