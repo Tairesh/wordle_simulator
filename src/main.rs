@@ -13,7 +13,7 @@ fn main() {
             exit(1);
         })
         .clone();
-    if target.is_empty() || target.chars().count() != wordle::WORD_LEN {
+    if target.is_empty() {
         println!("Invalid argument");
         exit(1);
     }
@@ -28,7 +28,7 @@ fn main() {
     let mut rng = thread_rng();
 
     while !words.is_empty() {
-        let current_word = if results.is_empty() {
+        let current_word = if results.is_empty() && target.chars().count() == 5 {
             String::from(
                 *[
                     "сдоба",
@@ -58,7 +58,7 @@ fn main() {
 
         words = words
             .into_iter()
-            .filter(|w| wordle::filter_word(w, &results))
+            .filter(|w| wordle::filter_word(w.as_str(), &results))
             .collect();
     }
 

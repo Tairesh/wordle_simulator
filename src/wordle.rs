@@ -1,8 +1,6 @@
 use std::collections::HashSet;
 use std::ops::Index;
 
-pub const WORD_LEN: usize = 5;
-
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Letter {
     Green,
@@ -22,12 +20,12 @@ impl From<Letter> for &str {
 
 #[derive(Debug, Clone)]
 pub struct CheckResult {
-    letters: [Letter; WORD_LEN],
+    letters: Vec<Letter>,
 }
 
 impl CheckResult {
-    pub fn new(raw: [Letter; WORD_LEN]) -> Self {
-        Self { letters: raw }
+    pub fn new(letters: Vec<Letter>) -> Self {
+        Self { letters }
     }
 
     pub fn as_string(&self) -> String {
@@ -54,23 +52,18 @@ impl Index<usize> for CheckResult {
 pub fn check_word(word: &str, target: &str) -> CheckResult {
     let word = str_to_chars(word);
     let target = str_to_chars(target);
-    let mut result = [
-        Letter::Gray,
-        Letter::Gray,
-        Letter::Gray,
-        Letter::Gray,
-        Letter::Gray,
-    ];
+    let target = target.as_slice();
+    let mut result = Vec::with_capacity(target.len());
     let mut used = HashSet::new();
-    for (i, c) in word.iter().enumerate() {
-        result[i] = if target[i] == *c {
+    for (i, c) in word.into_iter().enumerate() {
+        result.push(if target[i] == c {
             Letter::Green
-        } else if !used.contains(c) && target.contains(c) {
+        } else if !used.contains(&c) && target.contains(&c) {
             Letter::Yellow
         } else {
             Letter::Gray
-        };
-        used.insert(*c);
+        });
+        used.insert(c);
     }
 
     CheckResult::new(result)
@@ -78,10 +71,12 @@ pub fn check_word(word: &str, target: &str) -> CheckResult {
 
 pub fn filter_word(word: &str, results: &Vec<(String, CheckResult)>) -> bool {
     let word = str_to_chars(word);
+    let word = word.as_slice();
     for (current, result) in results {
         let current = str_to_chars(current.as_str());
-        for i in 0..WORD_LEN {
-            match result[i] {
+        let current = current.as_slice();
+        for (i, letter) in result.letters.iter().enumerate() {
+            match letter {
                 Letter::Green => {
                     if word[i] != current[i] {
                         return false;
@@ -104,36 +99,29 @@ pub fn filter_word(word: &str, results: &Vec<(String, CheckResult)>) -> bool {
     true
 }
 
-fn str_to_chars(word: &str) -> [char; WORD_LEN] {
-    word.chars()
-        .into_iter()
-        .take(WORD_LEN)
-        .collect::<Vec<char>>()
-        .try_into()
-        .unwrap()
+fn str_to_chars(word: &str) -> Vec<char> {
+    word.chars().into_iter().collect()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{check_word, CheckResult, Letter};
+    use super::{check_word, Letter};
 
     // ТКАНЬ tested here: https://wordle.belousov.one/?word_id=XgT7TH8clN1
 
     #[test]
     fn check_word_test() {
         let result = check_word("сдоба", "ткань");
-        assert!(matches!(
-            result,
-            CheckResult {
-                letters: [
-                    Letter::Gray,
-                    Letter::Gray,
-                    Letter::Gray,
-                    Letter::Gray,
-                    Letter::Yellow,
-                ]
-            }
-        ));
+        assert_eq!(
+            vec![
+                Letter::Gray,
+                Letter::Gray,
+                Letter::Gray,
+                Letter::Gray,
+                Letter::Yellow,
+            ],
+            result.letters
+        );
         assert_eq!("⬜️️⬜️️⬜️️⬜️️🟨", result.as_string());
         assert_eq!(false, result.success());
     }
@@ -141,38 +129,36 @@ mod tests {
     #[test]
     fn check_second_occurrence_is_gray() {
         let result = check_word("канал", "ткань");
-        assert!(matches!(
-            result,
-            CheckResult {
-                letters: [
-                    Letter::Yellow,
-                    Letter::Yellow,
-                    Letter::Yellow,
-                    Letter::Gray,
-                    Letter::Gray,
-                ]
-            }
-        ));
+        assert_eq!(
+            vec![
+                Letter::Yellow,
+                Letter::Yellow,
+                Letter::Yellow,
+                Letter::Gray,
+                Letter::Gray,
+            ],
+            result.letters,
+        );
         assert_eq!("🟨🟨🟨⬜️️⬜️️", result.as_string());
         assert_eq!(false, result.success());
         assert_eq!(Letter::Yellow, result[0]);
     }
 
+    // TODO: second letter
+
     #[test]
     fn check_success() {
         let result = check_word("ткань", "ткань");
-        assert!(matches!(
-            result,
-            CheckResult {
-                letters: [
-                    Letter::Green,
-                    Letter::Green,
-                    Letter::Green,
-                    Letter::Green,
-                    Letter::Green,
-                ]
-            }
-        ));
+        assert_eq!(
+            vec![
+                Letter::Green,
+                Letter::Green,
+                Letter::Green,
+                Letter::Green,
+                Letter::Green,
+            ],
+            result.letters,
+        );
         assert_eq!("🟩🟩🟩🟩🟩", result.as_string());
         assert_eq!(true, result.success());
     }
