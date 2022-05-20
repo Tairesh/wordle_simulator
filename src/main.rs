@@ -1,19 +1,10 @@
 mod wordle;
 
-extern crate serde;
-extern crate serde_json;
-
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::process::exit;
 
 fn main() {
-    let words: Vec<String> = serde_json::from_str(include_str!("../words.json")).unwrap();
-    let mut words: Vec<String> = words
-        .into_iter()
-        .filter(|w| w.len() == wordle::WORD_LEN * 2)
-        .collect();
-
     let args: Vec<String> = std::env::args().collect();
     let target = args
         .get(1)
@@ -22,10 +13,17 @@ fn main() {
             exit(1);
         })
         .clone();
-    if target.is_empty() || target.len() != wordle::WORD_LEN * 2 {
+    if target.is_empty() || target.chars().count() != wordle::WORD_LEN {
         println!("Invalid argument");
         exit(1);
     }
+
+    let mut words: Vec<String> = include_str!("../words.txt")
+        .split('\n')
+        .filter(|w| w.len() == target.len())
+        .map(|s| s.trim().to_lowercase().replace('ё', "е"))
+        .collect();
+
     let mut results = Vec::new();
     let mut rng = thread_rng();
 
