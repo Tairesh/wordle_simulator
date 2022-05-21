@@ -44,9 +44,10 @@ impl Index<usize> for Matches {
     }
 }
 
+/// Check difference between word and target
 pub fn diff(word: &str, target: &str) -> Matches {
-    let word = str_to_chars(word);
-    let mut target = str_to_chars(target);
+    let word = word.to_chars();
+    let mut target = target.to_chars();
 
     let mut diff = vec![Match::Gray; target.len()];
     let diff_slice = diff.as_mut_slice();
@@ -71,11 +72,11 @@ pub fn diff(word: &str, target: &str) -> Matches {
 }
 
 // TODO: tests
-pub fn filter_word(word: &str, results: &Vec<(String, Matches)>) -> bool {
-    let word = str_to_chars(word);
+pub fn filter_word(word: &str, attempts: &Vec<(String, Matches)>) -> bool {
+    let word = word.to_chars();
     let word = word.as_slice();
-    for (current, result) in results {
-        let current = str_to_chars(current.as_str());
+    for (current, result) in attempts {
+        let current = current.to_chars();
         let current = current.as_slice();
         for (i, letter) in result.0.iter().enumerate() {
             let c = current[i];
@@ -107,8 +108,14 @@ pub fn filter_word(word: &str, results: &Vec<(String, Matches)>) -> bool {
     true
 }
 
-fn str_to_chars(word: &str) -> Vec<char> {
-    word.chars().into_iter().collect()
+trait ToChars {
+    fn to_chars(&self) -> Vec<char>;
+}
+
+impl ToChars for str {
+    fn to_chars(&self) -> Vec<char> {
+        self.chars().into_iter().collect()
+    }
 }
 
 #[cfg(test)]
