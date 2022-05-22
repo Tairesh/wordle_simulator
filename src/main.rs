@@ -1,26 +1,34 @@
 mod solver;
 mod wordle;
 
-use rand::seq::SliceRandom;
-use rand::thread_rng;
-
 fn main() {
-    let words = include_str!("../words.txt")
+    let mut words = include_str!("../dictionary.txt")
         .split('\n')
         .map(String::from)
         .collect::<Vec<String>>();
 
-    let target = match std::env::args().nth(1) {
-        None => words
-            .choose(&mut thread_rng())
-            .unwrap() // Unreachable
-            .clone(),
-        Some(target) => target,
-    };
+    let targets = include_str!("../targets.txt")
+        .split('\n')
+        .map(String::from)
+        .collect::<Vec<String>>();
 
-    let (solution, attempts) = solver::solve(&target, &words);
-    println!("{solution}\n");
-    for (word, matches) in attempts {
-        println!("{} ||{}||", matches, word);
+    words.append(&mut targets.clone());
+
+    for target in std::env::args().skip(1) {
+        let (solution, attempts) = solver::solve(
+            &target,
+            &words,
+            solver::MAX_ATTEMPTS,
+            &if target.chars().count() == 5 {
+                Some("тоска".to_string())
+            } else {
+                None
+            },
+            &targets,
+        );
+        println!("{solution}\n");
+        for (word, matches) in attempts {
+            println!("{matches} ||{word}||");
+        }
     }
 }

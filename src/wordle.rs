@@ -75,10 +75,10 @@ pub fn diff(word: &str, target: &str) -> Matches {
 pub fn filter_word(word: &str, attempts: &Vec<(String, Matches)>) -> bool {
     let word = word.to_chars();
     let word = word.as_slice();
-    for (current, result) in attempts {
+    for (current, matches) in attempts {
         let current = current.to_chars();
         let current = current.as_slice();
-        for (i, letter) in result.0.iter().enumerate() {
+        for (i, letter) in matches.0.iter().enumerate() {
             let c = current[i];
             let count = current.iter().filter(|p| **p == c).count();
             match letter {
