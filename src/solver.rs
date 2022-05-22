@@ -26,9 +26,12 @@ pub type Attempt = (String, Matches);
 pub type Attempts = Vec<Attempt>;
 
 fn select_next_word(words: &[String], preferred_words: &[String]) -> String {
+    let mut frequency_positions: Vec<HashMap<char, usize>> =
+        vec![HashMap::with_capacity(32); words[0].chars().count()];
     let mut frequency: HashMap<char, usize> = HashMap::with_capacity(32);
     for w in words.iter() {
-        w.chars().for_each(|c| {
+        w.chars().enumerate().for_each(|(i, c)| {
+            frequency_positions[i].entry(c).or_insert(1).add_assign(1);
             frequency.entry(c).or_insert(1).add_assign(1);
         });
     }
@@ -38,8 +41,10 @@ fn select_next_word(words: &[String], preferred_words: &[String]) -> String {
         .map(|w| {
             let mut score = w
                 .chars()
-                .map(|c| {
-                    frequency.get(&c).copied().unwrap_or(0)
+                .enumerate()
+                .map(|(i, c)| {
+                    (frequency.get(&c).copied().unwrap_or(0)
+                        + frequency_positions[i].get(&c).copied().unwrap_or(0))
                         / w.chars().filter(|cc| *cc == c).count()
                 })
                 .sum();
