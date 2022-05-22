@@ -1,3 +1,3 @@
 # wordle simulator
 
-Wordle generator and solver. It uses Russian words from words.txt but will probably work with any other language
+Wordle solver. It uses Russian words from dictionary.txt and targets.txt but will probably work with any other language
