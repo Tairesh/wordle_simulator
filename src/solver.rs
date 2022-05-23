@@ -22,10 +22,10 @@ impl Display for Solution {
     }
 }
 
-pub type Attempt = (String, Matches);
+pub type Attempt = (&'static str, Matches);
 pub type Attempts = Vec<Attempt>;
 
-fn select_next_word(words: &[String], preferred_words: &[String]) -> String {
+fn select_next_word(words: &[&'static str], preferred_words: &[&'static str]) -> &'static str {
     let mut frequency_positions: Vec<HashMap<char, usize>> =
         vec![HashMap::with_capacity(32); words[0].chars().count()];
     let mut frequency: HashMap<char, usize> = HashMap::with_capacity(32);
@@ -36,7 +36,7 @@ fn select_next_word(words: &[String], preferred_words: &[String]) -> String {
         });
     }
 
-    let mut words_with_score: Vec<(&String, usize)> = words
+    let mut words_with_score: Vec<(&str, usize)> = words
         .iter()
         .map(|w| {
             let mut score = w
@@ -51,39 +51,36 @@ fn select_next_word(words: &[String], preferred_words: &[String]) -> String {
             if preferred_words.contains(w) {
                 score *= 2;
             }
-            (w, score)
+            (*w, score)
         })
         .collect();
     words_with_score.sort_by(|(_, score1), (_, score2)| score1.cmp(score2));
 
-    words_with_score.pop().unwrap().0.clone()
+    words_with_score.pop().unwrap().0
 }
 
 pub fn solve(
     target: &str,
-    words: &[String],
+    words: &[&'static str],
     attempts_limit: usize,
-    start_word: &Option<String>,
-    preferred_words: &[String],
+    start_word: Option<&'static str>,
+    preferred_words: &[&'static str],
 ) -> (Solution, Attempts) {
     let mut attempts = Vec::new();
-    let mut words: Vec<String> = words
+    let mut words: Vec<&str> = words
         .iter()
         .filter(|w| w.len() == target.len())
-        .cloned()
+        .copied()
         .collect();
 
     while !words.is_empty() {
         let current_word = if attempts.is_empty() {
-            start_word
-                .as_ref()
-                .cloned()
-                .unwrap_or_else(|| select_next_word(&words, preferred_words))
+            start_word.unwrap_or_else(|| select_next_word(&words, preferred_words))
         } else {
             select_next_word(&words, preferred_words)
         };
 
-        let diff = wordle::diff(current_word.as_str(), target);
+        let diff = wordle::diff(current_word, target);
         attempts.push((current_word, diff.clone()));
 
         if diff.success() {

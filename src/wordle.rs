@@ -1,3 +1,4 @@
+use crate::solver::Attempts;
 use std::fmt::Display;
 use std::ops::Index;
 
@@ -72,7 +73,7 @@ pub fn diff(word: &str, target: &str) -> Matches {
 }
 
 // TODO: tests
-pub fn filter_word(word: &str, attempts: &Vec<(String, Matches)>) -> bool {
+pub fn filter_word(word: &str, attempts: &Attempts) -> bool {
     let word = word.to_chars();
     let word = word.as_slice();
     for (current, matches) in attempts {
