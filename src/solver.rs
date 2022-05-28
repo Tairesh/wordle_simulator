@@ -25,7 +25,11 @@ impl Display for Solution {
 pub type Attempt = (&'static str, Matches);
 pub type Attempts = Vec<Attempt>;
 
-fn select_next_word(words: &[&'static str], preferred_words: &[&'static str]) -> &'static str {
+fn select_next_word(
+    words: &[&'static str],
+    preferred_words: &[&'static str],
+    prioritized_words: &[&'static str],
+) -> &'static str {
     let mut frequency_positions: Vec<HashMap<char, usize>> =
         vec![HashMap::with_capacity(32); words[0].chars().count()];
     let mut frequency: HashMap<char, usize> = HashMap::with_capacity(32);
@@ -48,8 +52,11 @@ fn select_next_word(words: &[&'static str], preferred_words: &[&'static str]) ->
                         / w.chars().filter(|cc| *cc == c).count()
                 })
                 .sum();
+            if prioritized_words.contains(w) {
+                score *= 10;
+            }
             if preferred_words.contains(w) {
-                score *= 2;
+                score *= 5;
             }
             (*w, score)
         })
@@ -65,6 +72,7 @@ pub fn solve(
     attempts_limit: usize,
     start_word: Option<&'static str>,
     preferred_words: &[&'static str],
+    prioritized_words: &[&'static str],
 ) -> (Solution, Attempts) {
     let mut attempts = Vec::new();
     let mut words: Vec<&str> = words
@@ -75,9 +83,10 @@ pub fn solve(
 
     while !words.is_empty() {
         let current_word = if attempts.is_empty() {
-            start_word.unwrap_or_else(|| select_next_word(&words, preferred_words))
+            start_word
+                .unwrap_or_else(|| select_next_word(&words, preferred_words, prioritized_words))
         } else {
-            select_next_word(&words, preferred_words)
+            select_next_word(&words, preferred_words, prioritized_words)
         };
 
         let diff = wordle::diff(current_word, target);

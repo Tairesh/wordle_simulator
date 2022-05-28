@@ -10,6 +10,10 @@ fn main() {
         .split('\n')
         .collect::<Vec<&str>>();
 
+    let priorities = include_str!("../priorities.txt")
+        .split('\n')
+        .collect::<Vec<&str>>();
+
     for target in std::env::args().skip(1) {
         let (solution, attempts) = solver::solve(
             &target,
@@ -21,6 +25,7 @@ fn main() {
                 None
             },
             &targets,
+            &priorities,
         );
         println!("{solution}\n");
         for (word, matches) in attempts {
